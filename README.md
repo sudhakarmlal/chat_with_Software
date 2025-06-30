@@ -99,6 +99,7 @@ This project is for educational and research purposes. Please respect the licens
 
 
 # arXiv Q&A with FAISS & Streamlit
+Ytube URL: https://youtu.be/DPxrQD9GbSs
 
 <img src="software_images/ChatWithArxivPaper.JPG" width="900"/>
 
