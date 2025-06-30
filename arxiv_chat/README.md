@@ -1,5 +1,9 @@
 # arXiv Q&A with FAISS & Streamlit
 
+Ytube URL: https://youtu.be/DPxrQD9GbSs
+
+<img src="../software_images/ChatWithArxivPaper.JPG" width="900"/>
+
 This project allows you to chat with research papers from arXiv. It downloads a paper, stores its content in a FAISS vector database, and uses a Large Language Model (LLM) to answer your questions about it through a user-friendly web interface.
 
 ## Setup
