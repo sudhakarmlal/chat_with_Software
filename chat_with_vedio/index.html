@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube Indexer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 1rem;
+            padding: 10px;
+            font-size: 1rem;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        #response {
+            margin-top: 2rem;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>YouTube URL Indexer</h1>
+    <textarea id="urlList" placeholder="Enter one YouTube URL per line..."></textarea>
+    <br>
+    <button onclick="submitURLs()">Submit</button>
+
+    <div id="response"></div>
+
+    <script>
+        async function submitURLs() {
+            const urls = document.getElementById("urlList").value
+                .split("\n")
+                .map(url => url.trim())
+                .filter(url => url);
+
+            const responseBox = document.getElementById("response");
+            responseBox.innerHTML = "<p>Submitting...</p>";
+
+            try {
+                const response = await fetch("/index_urls", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ urls })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    renderTable(result.results);
+                } else {
+                    responseBox.innerHTML = `<p class="error">Error: ${result.detail || "Unknown error"}</p>`;
+                }
+            } catch (error) {
+                responseBox.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+
+        function renderTable(results) {
+            const responseBox = document.getElementById("response");
+
+            if (!results.length) {
+                responseBox.innerHTML = "<p>No results returned.</p>";
+                return;
+            }
+
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>URL</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            results.forEach((item, index) => {
+                tableHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><a href="${item.url}" target="_blank">${item.url}</a></td>
+                        <td class="success">${item.status}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += "</tbody></table>";
+            responseBox.innerHTML = tableHTML;
+        }
+    </script>
+</body>
+</html>
+
