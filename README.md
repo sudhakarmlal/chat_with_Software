@@ -1,5 +1,7 @@
 # Chat with GitHub Repository using Ollama Llama3 and FAISS
 
+<img src="software_images/ChatWithGitHub.JPG" width="400"/>
+
 This application allows you to chat with the contents of any public GitHub repository. It uses [Ollama](https://ollama.com/) to run the Llama3 language model locally and [FAISS](https://github.com/facebookresearch/faiss) for efficient document retrieval. The app is built with [Streamlit](https://streamlit.io/) for an interactive web interface.
 
 ---
