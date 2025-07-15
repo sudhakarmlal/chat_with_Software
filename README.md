@@ -163,3 +163,66 @@ https://drive.google.com/file/d/107pGmkjBVopMwSGBfhVpBl6ysCCSLZhD/view?usp=shari
 
 ## License
 MIT
+
+## Cloud Deployment(Sky Pilot)
+
+
+Install SkyPilot:
+
+bash
+Copy
+Edit
+pip install -U skypilot
+Configure AWS credentials:
+Ensure you have access keys in place (~/.aws/credentials) or run:
+
+bash
+Copy
+Edit
+aws configure
+Verify AWS access in SkyPilot:
+
+bash
+Copy
+Edit
+sky check
+🧠 Example: Deploying an LLM Inference Server
+Let’s say you want to run an LLM (e.g., LLaMA, Mistral, GPT-J, or any HuggingFace-based model) with inference using a pre-written script (serve.py) and model files.
+
+✅ Step 1: Create a SkyPilot Task YAML
+Create a file called llm_infer.yaml:
+
+yaml
+Copy
+Edit
+name: llm-inference
+
+resources:
+  accelerators: A10G:1  # or T4/V100/A100 depending on model size and region
+
+setup: |
+  conda create -n llmenv python=3.10 -y
+  source activate llmenv
+  pip install torch transformers accelerate flask
+
+run: |
+  source activate llmenv
+  python serve.py  # your LLM inference server (Flask/FastAPI/Gradio/etc.)
+
+workdir: .
+This assumes:
+
+Your serve.py is the entry point.
+
+You're using HuggingFace or equivalent.
+
+✅ Step 2: Run on AWS with SkyPilot
+bash
+Copy
+Edit
+sky launch -c llm-server llm_infer.yaml --cloud aws
+-c llm-server: creates a named cluster.
+
+--cloud aws: forces AWS, though SkyPilot picks cheapest by default.
+
+THis will launch the application to chat with Arxiv,Ytube or GitHub
