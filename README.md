@@ -1,140 +1,165 @@
-# Chat with GitHub Repository using Ollama Llama3 and FAISS
+# Software Whisperer: Unified QA Agent
 
-Ytube URL:
-https://www.youtube.com/watch?v=rQRAv925pjI
-
-
-<img src="software_images/ChatWithGitHub.JPG" width="900"/>
-
-This application allows you to chat with the contents of any public GitHub repository. It uses [Ollama](https://ollama.com/) to run the Llama3 language model locally and [FAISS](https://github.com/facebookresearch/faiss) for efficient document retrieval. The app is built with [Streamlit](https://streamlit.io/) for an interactive web interface.
+Software Whisperer is a unified question-answering (QA) system that allows users to ask questions about arXiv papers, GitHub repositories, and YouTube videos. The system leverages multiple specialized QA microservices (MCP servers) and a central agent server with a modern web UI.
 
 ---
 
 ## Features
-- **Clone any public GitHub repository** by URL
-- **Index all text/code files** using FAISS and Llama3 embeddings
-- **Ask questions** about the repository and get context-aware answers
-- **Caching**: Repositories are indexed only once for fast repeated queries
-- **Progress bar** and status updates during processing
+- **arXiv Paper QA**: Ask questions about scientific papers from arXiv.org.
+- **GitHub Repo QA**: Ask questions about the code and documentation in any public GitHub repository.
+- **Video QA**: Ask questions about the content of indexed YouTube videos, with relevant video clip links.
+- **Unified Web UI**: Modern, easy-to-use interface for all QA types.
+- **LLM-Powered Routing**: Uses Gemini/OpenAI to route questions to the correct backend.
+- ** Text to Video Model**: Trained a model from scratch by using text as input and video clips as output
 
 ---
 
-## Requirements
-- Python 3.9+
-- [Ollama](https://ollama.com/) installed and running locally
-- Llama3 model pulled via Ollama
+## Architecture Overview
+
+```
++-------------------+         +-------------------+         +-------------------+
+|                   |         |                   |         |                   |
+|  arXiv QA MCP     |         |  Repo QA MCP      |         |  Video QA MCP     |
+|  (arxiv_faiss_qa_ |         |  (repo_qa_mcp_    |         |  (video_mcp_sse_  |
+|  server.py)       |         |  server.py)       |         |  server.py)       |
+|                   |         |                   |         |                   |
++---------+---------+         +---------+---------+         +---------+---------+
+          |                             |                             |
+          +-----------------------------+-----------------------------+
+                                        |                          |
+                                        v                          v
+                          +-------------------------------+     +--------------------+
+                          |      Agent Server (FastAPI)   |     |   Faiss (Vector DB)|
+                          |      (agent_server.py)        | ->  |                    |
+                          +-------------------------------+     +--------------------+
+                                        |
+                                        v
+                          +-------------------------------+
+                          |         Web UI                |
+                          |      (index.html)             |
+                          +-------------------------------+
+```
+
+- Each MCP server is a FastAPI/Starlette app exposing a single QA tool via SSE.
+- The agent server routes user questions to the correct MCP server and returns the answer to the UI.
+- The UI is a single-page app (index.html) with navigation for arXiv, GitHub, and Video QA.
+- Faiss is used as Vector database
+- all-MiniLM-L6-v2 sentence transformer embedding model is used for indexing and searching on Faiss Vector DB.
 
 ---
 
-## Installation
+## File Overview
 
-1. **Clone this repository** (or download the code):
-    ```bash
-    git clone <this-repo-url>
-    cd <this-repo-directory>
-    ```
-
-2. **Install Python dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-3. **Install and start Ollama:**
-    - Download and install Ollama from [https://ollama.com/](https://ollama.com/)
-    - Pull the Llama3 model:
-      ```bash
-      ollama pull llama3
-      ```
-    - Start Ollama (if not already running):
-      ```bash
-      ollama run llama3
-      ```
+- **arxiv_faiss_qa_server.py**: MCP server for arXiv paper QA. Downloads, indexes, and answers questions about arXiv PDFs using Gemini embeddings and LLM.
+- **repo_qa_mcp_server.py**: MCP server for GitHub repo QA. Clones, indexes, and answers questions about public GitHub repositories using SentenceTransformer and Gemini LLM.
+- **video_mcp_sse_server.py**: MCP server for Video QA. Indexes and answers questions about YouTube videos, returning relevant video clip links.
+- **agent_server.py**: Central FastAPI server. Routes questions to the correct MCP server using LLM-based or rule-based routing. Serves the web UI and static video clips.
+- **templates/index.html**: The web UI, allowing users to select QA type, enter context and questions, and view answers (with video clip links for Video QA).
+- **requirements.txt**: All required Python dependencies for the project.
 
 ---
 
-## Usage
+## Setup Instructions
 
-1. **Start the Streamlit app:**
-    ```bash
-    streamlit run main.py
-    ```
+### 1. Clone the Repository
+```bash
+git clone https://github.com/sudhakarmlal/chat_with_Software
+cd SOFTWARE_WHISPERER
+```
 
-2. **In your browser:**
-    - Enter the URL of a public GitHub repository (e.g., `https://github.com/fastai/fastai`)
-    - Click **Process Repository**
-    - Wait for the progress bar to complete (first time only; subsequent loads are instant)
-    - Ask questions about the repository in the chat box
+### 2. Install Python Dependencies
+It is recommended to use a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-3. **Re-indexing:**
-    - If the repository changes or you want to re-index, use the **Force Re-process Repository** button.
+### 3. Set Environment Variables
+You need a Gemini API key (or OpenAI key if using OpenAI):
+```bash
+export GEMINI_API_KEY=your-gemini-api-key
+# Optionally, set MCP server URLs if running on different hosts/ports
+export ARXIV_QA_MCP_SERVER_URL=http://localhost:8081/sse
+export REPO_QA_MCP_SERVER_URL=http://localhost:8090/sse
+export VIDEO_QA_MCP_SERVER_URL=http://localhost:8080/sse
+```
+
+### 4. Start the MCP Servers
+Open three terminals and run:
+```bash
+# Terminal 1: arXiv QA
+python arxiv_faiss_qa_server.py
+
+# Terminal 2: Repo QA
+python repo_qa_mcp_server.py
+
+# Terminal 3: Video QA
+python video_mcp_sse_server.py
+```
+
+### 5. Start the Agent Server
+In a new terminal:
+```bash
+python agent_server.py
+```
+
+### 6. Access the Web UI
+Open your browser and go to:
+```
+http://localhost:8100/
+```
+
+---
+
+## Usage Flow
+
+1. **User opens the web UI** and selects arXiv, GitHub, or Video QA.
+2. **User enters context** (arXiv URL, GitHub URL, or just a question for video) and submits a question.
+3. **Agent server receives the question**, uses LLM or rules to route it to the correct MCP server.
+4. **MCP server processes the question**:
+    - arXiv: Downloads and indexes the paper, answers using Gemini LLM.
+    - Repo: Clones and indexes the repo, answers using Gemini LLM.
+    - Video: Searches indexed video clips, summarizes, and returns relevant clip links.
+5. **Agent server returns the answer** (and video links if applicable) to the UI.
+6. **UI displays the answer** and clickable video clip links (for Video QA).
+
+---
+
+## Video QA Notes
+- Video clips must be pre-indexed and stored in `ui/clips/`.
+- User can provide youtube URLs in UI to index. Please see the URL demo for indexing: https://youtu.be/nnrARJgt6-4
+- The MCP video server returns a list of relevant clip paths, which are rendered as clickable links in the UI.
+
+---
+
+## Text to Video Training from scratch:
+
+- The dataset is generated while indexing around 50 youtube sites by creating 20 seconds video clips as well text from the audio
+- The dataset can be found in URLS: 
+https://drive.google.com/file/d/1HWNCJmzwsSLoJm39Cf2e3brvtOeq-cXy/view?usp=sharing
+https://drive.google.com/file/d/107pGmkjBVopMwSGBfhVpBl6ysCCSLZhD/view?usp=sharing
+
+- Model is trained in jupyter notebook text_to_video_latest.ipynb
+- It uses TextToVideo custom model, VideoDecoder, CLIP tockenizer and CLIP text Model for encoding text
+- The model is trained for 50 epochs
+- The model and some sample generated videos are availabe in: https://drive.google.com/drive/folders/1EQCgfv9-PbTxt4TSlYyXp8eUd2QeWcJZ?usp=sharing
+
+
+
+## Customization & Extensibility
+- You can add more MCP servers for other data types (e.g., PDF, websites) and update the agent server routing logic.
+- The UI can be extended with more features or improved styling.
 
 ---
 
 ## Troubleshooting
-
-- **Ollama not running:**
-  - Make sure you have started Ollama and the Llama3 model is loaded (`ollama run llama3`).
-- **Processing is slow:**
-  - The first time you process a large repository, embedding generation can take several minutes. Subsequent queries are fast.
-- **Error deleting repo:**
-  - On Windows, file locks may prevent deletion. You can safely ignore or manually delete the folder if needed.
-- **App hangs on question:**
-  - Ensure Ollama is running and not busy. Limit the number of context chunks (see code comments).
-
----
-
-## How it Works
-
-1. **Cloning:** The app clones the specified GitHub repository into the current directory.
-2. **Document Loading:** All text/code files are loaded and split into manageable chunks.
-3. **Embedding & Indexing:** Each chunk is embedded using Llama3 via Ollama, and stored in a FAISS vector database.
-4. **Chat:** When you ask a question, the app retrieves the most relevant chunks and uses Llama3 to generate an answer.
+- **CORS/Network Issues**: Ensure all servers are running and accessible on the correct ports.
+- **Python Version**: Use Python 3.10 or 3.11 for best compatibility.
+- **Gemini/OpenAI API**: Ensure your API key is valid and you have network access.
+- **Video QA**: Ensure video clips are present in `ui/clips/` and metadata/index files are up to date.
 
 ---
 
 ## License
-This project is for educational and research purposes. Please respect the licenses of any repositories you process. 
-
-=====================================================================================================================
-
-
-# arXiv Q&A with FAISS & Streamlit
-Ytube URL: https://youtu.be/DPxrQD9GbSs
-
-<img src="software_images/ChatWithArxivPaper.JPG" width="900"/>
-
-This project allows you to chat with research papers from arXiv. It downloads a paper, stores its content in a FAISS vector database, and uses a Large Language Model (LLM) to answer your questions about it through a user-friendly web interface.
-
-## Setup
-
-1.  **Install dependencies:**
-    
-    ```bash
-    pip install -r requirements.txt
-    ```
-    
-2.  **Set up your environment:**
-    
-    *   Create a file named `.env` in the project directory.
-    *   Add your OpenAI API key to this file:
-        
-        ```
-        OPENAI_API_KEY="your_openai_api_key_here"
-        ```
-    *   If you prefer not to use a `.env` file, you can enter the API key directly in the web application.
-
-## How to Run
-
-1.  **Run the Streamlit app:**
-    
-    ```bash
-    streamlit run arxiv_faiss_qa.py
-    ```
-    
-2.  **Use the Application:**
-    
-    *   Open the URL provided by Streamlit in your web browser.
-    *   Enter your OpenAI API key (if not already set in your environment).
-    *   Enter the URL of an arXiv paper. Example: `https://arxiv.org/abs/1706.03762`.
-    *   Click "Process Paper" and wait for it to be indexed.
-    *   Once processed, ask your questions in the text box and get answers from the paper. 
+MIT
