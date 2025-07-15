@@ -1,3 +1,11 @@
+Ytube QA Chatbot for Software Whisperer:
+https://www.youtube.com/watch?v=oRe3RS0xRC4
+
+Indexing of the ytube videos
+
+https://youtu.be/nnrARJgt6-4
+
+
 # Software Whisperer: Unified QA Agent
 
 Software Whisperer is a unified question-answering (QA) system that allows users to ask questions about arXiv papers, GitHub repositories, and YouTube videos. The system leverages multiple specialized QA microservices (MCP servers) and a central agent server with a modern web UI.
